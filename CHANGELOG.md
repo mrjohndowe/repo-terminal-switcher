@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+- Close every previous integrated terminal when switching repositories.
+- Create one fresh PowerShell terminal named `Repo Terminal` at the new root.
+- Detect Source Control preview files through active, opened, and visible editor events.
+
 ## 1.1.2
 
 - Use pnpm 11's current `allowBuilds` policy format in the release workflow.

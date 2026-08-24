@@ -66,10 +66,6 @@ async function rootFor(documentUri) {
   return workspaceFolder && workspaceFolder.uri;
 }
 
-function powerShellLiteral(value) {
-  return `'${value.replace(/'/g, "''")}'`;
-}
-
 function request(url, accept = 'application/vnd.github+json', redirects = 0) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
@@ -166,29 +162,26 @@ async function checkForUpdate(context) {
   }
 }
 
-function findOrCreateTerminal(rootUri) {
-  if (repoTerminal && vscode.window.terminals.includes(repoTerminal)) {
-    return repoTerminal;
+function createRepoTerminal(rootUri) {
+  repoTerminal = undefined;
+  currentRoot = undefined;
+
+  for (const terminal of [...vscode.window.terminals]) {
+    terminal.dispose();
   }
 
-  repoTerminal = vscode.window.terminals.find(
-    (terminal) => terminal.name === TERMINAL_NAME
-  );
+  const options = {
+    name: TERMINAL_NAME,
+    cwd: rootUri,
+    location: vscode.TerminalLocation.Panel
+  };
 
-  if (!repoTerminal) {
-    const options = {
-      name: TERMINAL_NAME,
-      cwd: rootUri,
-      location: vscode.TerminalLocation.Panel
-    };
-
-    if (process.platform === 'win32') {
-      options.shellPath = 'powershell.exe';
-    }
-
-    repoTerminal = vscode.window.createTerminal(options);
+  if (process.platform === 'win32') {
+    options.shellPath = 'powershell.exe';
   }
 
+  repoTerminal = vscode.window.createTerminal(options);
+  currentRoot = normalize(rootUri.fsPath);
   return repoTerminal;
 }
 
@@ -205,26 +198,31 @@ async function syncToEditor(editor, showTerminal = true) {
     return;
   }
 
-  const terminal = findOrCreateTerminal(rootUri);
   const nextRoot = normalize(rootUri.fsPath);
-
-  if (currentRoot !== nextRoot) {
-    terminal.sendText(
-      `Set-Location -LiteralPath ${powerShellLiteral(rootUri.fsPath)}`,
-      true
-    );
-    currentRoot = nextRoot;
-  }
+  const terminalIsOpen = repoTerminal && vscode.window.terminals.includes(repoTerminal);
+  const terminal = terminalIsOpen && currentRoot === nextRoot
+    ? repoTerminal
+    : createRepoTerminal(rootUri);
 
   if (showTerminal) {
     terminal.show(true);
   }
 }
 
+function syncActiveEditor(showTerminal = true) {
+  void syncToEditor(vscode.window.activeTextEditor, showTerminal);
+}
+
 function activate(context) {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       void syncToEditor(editor, true);
+    }),
+    vscode.workspace.onDidOpenTextDocument(() => {
+      setTimeout(() => syncActiveEditor(true), 0);
+    }),
+    vscode.window.onDidChangeVisibleTextEditors(() => {
+      syncActiveEditor(true);
     }),
     vscode.window.onDidCloseTerminal((terminal) => {
       if (terminal === repoTerminal) {
@@ -237,7 +235,7 @@ function activate(context) {
     })
   );
 
-  void syncToEditor(vscode.window.activeTextEditor, false);
+  syncActiveEditor(false);
   setTimeout(() => void checkForUpdate(context), 10000);
 }
 

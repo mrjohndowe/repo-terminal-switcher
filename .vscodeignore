@@ -1,0 +1,6 @@
+.github/**
+.pnpm-store/**
+node_modules/**
+pnpm-lock.yaml
+pnpm-workspace.yaml
+*.vsix
