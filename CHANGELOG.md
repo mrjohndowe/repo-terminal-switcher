@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.3
+## 1.1.4
 
 - Close every previous integrated terminal when switching repositories.
 - Create one fresh PowerShell terminal named `Repo Terminal` at the new root.
