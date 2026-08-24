@@ -213,6 +213,22 @@ function syncActiveEditor(showTerminal = true) {
   void syncToEditor(vscode.window.activeTextEditor, showTerminal);
 }
 
+async function openForSourceControl(sourceControl) {
+  const rootUri = sourceControl && sourceControl.rootUri;
+  if (!rootUri || rootUri.scheme !== 'file') {
+    await vscode.window.showErrorMessage(
+      'Repo Terminal Switcher could not determine the selected repository root.'
+    );
+    return;
+  }
+
+  const generation = ++syncGeneration;
+  const terminal = createRepoTerminal(rootUri);
+  if (generation === syncGeneration) {
+    terminal.show(true);
+  }
+}
+
 function activate(context) {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -232,6 +248,9 @@ function activate(context) {
     }),
     vscode.commands.registerCommand('repoTerminalSwitcher.syncNow', () => {
       return syncToEditor(vscode.window.activeTextEditor, true);
+    }),
+    vscode.commands.registerCommand('repoTerminalSwitcher.openForSourceControl', (sourceControl) => {
+      return openForSourceControl(sourceControl);
     })
   );
 

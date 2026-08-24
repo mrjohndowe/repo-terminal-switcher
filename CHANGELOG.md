@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.5
+
+- Add a PowerShell-terminal action directly to every Git repository row in
+  Source Control.
+- Use the clicked Source Control provider's `rootUri` instead of the active
+  editor when opening a repository terminal from that action.
+
 ## 1.1.4
 
 - Close every previous integrated terminal when switching repositories.

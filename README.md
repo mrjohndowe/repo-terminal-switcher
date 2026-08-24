@@ -27,8 +27,15 @@ release automatically and offers to reload VS Code. Disable this with the
 
 ## Use
 
-Open or click a file in the editor or Source Control. You can also run
-**Repo Terminal: Sync to Active File** from the Command Palette.
+In the Source Control **Repositories** list, click the PowerShell-terminal icon
+on the repository row you want. The extension closes the existing integrated
+terminals and creates one fresh **Repo Terminal** at that repository root.
+
+VS Code does not expose an event for clicking the native repository label
+itself, so the terminal icon on that same row is the direct supported action.
+
+Opening or clicking a file still synchronizes the terminal as a fallback. You
+can also run **Repo Terminal: Sync to Active File** from the Command Palette.
 
 ## Publish an update
 
