@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.9
+
+- Add the Repo Terminal Switcher extension logo.
+- Add a Features section and walkthrough-video location to the README.
+
+## 1.1.8
+
+- Remove the separate `Repository Terminals` section.
+- Restore the PowerShell terminal action directly on each built-in Git
+  repository row in Source Control.
+- Preserve VS Code's normal repository-row click behavior.
+
 ## 1.1.7
 
 - Add a `Repository Terminals` list directly inside the Source Control view.

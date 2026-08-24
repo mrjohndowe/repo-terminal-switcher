@@ -1,13 +1,30 @@
 # Repo Terminal Switcher
 
-A Windows-focused VS Code extension that adds a single-click **Repository
-Terminals** list directly inside the Source Control view.
+![Repo Terminal Switcher logo](media/repo-terminal-switcher-logo.png)
+
+A Windows-focused VS Code extension that adds a terminal action directly to
+each Git repository in VS Code's built-in **Repositories** section.
+
+## Features
+
+- Adds a PowerShell terminal action directly to every built-in Git repository
+  row in Source Control.
+- Replaces all existing integrated terminals with one fresh **Repo Terminal**
+  in the selected repository's root.
+- Leaves VS Code's normal repository-name click behavior unchanged.
+
+### Video walkthrough
+
+The walkthrough video will be embedded here once its final recording is
+available. It will show opening Source Control, hovering a repository, clicking
+the PowerShell terminal action, and seeing the terminal open at that
+repository's root.
 
 ## Use
 
 1. Open VS Code's Source Control view.
-2. Expand **Repository Terminals**.
-3. Click a repository name.
+2. Under **Repositories**, hover a Git repository and click the PowerShell
+   terminal button.
 
 That one click closes every existing integrated terminal and creates one fresh
 PowerShell terminal named **Repo Terminal** at the selected repository root.
@@ -17,12 +34,10 @@ The list uses repositories discovered by VS Code's built-in Git extension and
 refreshes when repositories open or close. If Git has not discovered any
 repositories yet, workspace folders are shown as a fallback.
 
-## Why this list exists
-
-VS Code does not expose an extension event for selecting a repository name in
-Microsoft's native **Repositories** list. The extension-owned **Repository
-Terminals** list provides the same single-click repository-name interaction
-with a supported API.
+The repository name itself keeps VS Code's normal behavior. VS Code does not
+allow extensions to replace or intercept clicks on its native repository rows;
+the adjacent terminal button is the supported way to open a terminal for the
+selected repository.
 
 ## Install
 
