@@ -2,7 +2,7 @@
   "name": "repo-terminal-switcher",
   "displayName": "Repo Terminal Switcher",
   "description": "Keeps one PowerShell terminal synchronized with the Git repository of the active file.",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "publisher": "mrjohndowe",
   "license": "MIT",
   "engines": {

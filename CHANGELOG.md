@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.5
+## 1.1.6
 
 - Add a PowerShell-terminal action directly to every Git repository row in
   Source Control.
