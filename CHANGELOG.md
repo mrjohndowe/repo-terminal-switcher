@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Fix pnpm 11 build-script approval for automated GitHub release packaging.
+
 ## 1.1.0
 
 - Synchronize `Repo Terminal` with the repository of the active file.
