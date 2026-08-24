@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+
+- Use pnpm 11's current `allowBuilds` policy format in the release workflow.
+
 ## 1.1.1
 
 - Fix pnpm 11 build-script approval for automated GitHub release packaging.
