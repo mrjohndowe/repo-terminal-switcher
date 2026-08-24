@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.7
+
+- Add a `Repository Terminals` list directly inside the Source Control view.
+- Make each repository name a single-click terminal switch action.
+- Remove automatic active-editor switching and the repository-row terminal
+  button.
+- Refresh the list when Git repositories or workspace folders change.
+
 ## 1.1.6
 
 - Add a PowerShell-terminal action directly to every Git repository row in

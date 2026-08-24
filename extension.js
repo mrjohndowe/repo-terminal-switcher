@@ -9,61 +9,81 @@ const TERMINAL_NAME = 'Repo Terminal';
 const RELEASE_API = 'https://api.github.com/repos/mrjohndowe/repo-terminal-switcher/releases/latest';
 const MAX_UPDATE_BYTES = 20 * 1024 * 1024;
 
-let repoTerminal;
-let currentRoot;
-let syncGeneration = 0;
-
-function normalize(filePath) {
-  const resolved = path.resolve(filePath);
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-}
-
-function containsPath(rootPath, filePath) {
-  const root = normalize(rootPath);
-  const file = normalize(filePath);
-  return file === root || file.startsWith(root + path.sep);
-}
-
-function deepestContainingRoot(roots, filePath) {
-  return roots
-    .filter((root) => containsPath(root.fsPath, filePath))
-    .sort((a, b) => b.fsPath.length - a.fsPath.length)[0];
-}
-
-async function gitRootFor(documentUri) {
-  const gitExtension = vscode.extensions.getExtension('vscode.git');
-  if (!gitExtension) {
-    return undefined;
+class RepositoryProvider {
+  constructor() {
+    this.gitApi = undefined;
+    this.disposables = [];
+    this.changeEmitter = new vscode.EventEmitter();
+    this.onDidChangeTreeData = this.changeEmitter.event;
   }
 
-  try {
-    const exports = gitExtension.isActive
-      ? gitExtension.exports
-      : await gitExtension.activate();
-    const gitApi = exports && typeof exports.getAPI === 'function'
-      ? exports.getAPI(1)
-      : undefined;
-    const repositories = gitApi && Array.isArray(gitApi.repositories)
-      ? gitApi.repositories
+  async initialize() {
+    const gitExtension = vscode.extensions.getExtension('vscode.git');
+    if (!gitExtension) {
+      return;
+    }
+
+    try {
+      const exports = gitExtension.isActive
+        ? gitExtension.exports
+        : await gitExtension.activate();
+      this.gitApi = exports && typeof exports.getAPI === 'function'
+        ? exports.getAPI(1)
+        : undefined;
+
+      if (this.gitApi && typeof this.gitApi.onDidOpenRepository === 'function') {
+        this.disposables.push(this.gitApi.onDidOpenRepository(() => this.refresh()));
+      }
+      if (this.gitApi && typeof this.gitApi.onDidCloseRepository === 'function') {
+        this.disposables.push(this.gitApi.onDidCloseRepository(() => this.refresh()));
+      }
+    } catch (error) {
+      console.warn('Repo Terminal Switcher could not initialize the Git API:', error);
+    }
+
+    this.refresh();
+  }
+
+  refresh() {
+    this.changeEmitter.fire(undefined);
+  }
+
+  getTreeItem(entry) {
+    const label = path.basename(entry.rootUri.fsPath);
+    const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+    item.iconPath = new vscode.ThemeIcon('repo');
+    item.tooltip = `Open Repo Terminal at ${entry.rootUri.fsPath}`;
+    item.command = {
+      command: 'repoTerminalSwitcher.openRepository',
+      title: 'Open Repository Terminal',
+      arguments: [entry.rootUri]
+    };
+    return item;
+  }
+
+  getChildren() {
+    const repositories = this.gitApi && Array.isArray(this.gitApi.repositories)
+      ? this.gitApi.repositories
       : [];
+    const entries = repositories.length > 0
+      ? repositories.map((repository) => ({ rootUri: repository.rootUri }))
+      : (vscode.workspace.workspaceFolders || []).map((folder) => ({ rootUri: folder.uri }));
 
-    return deepestContainingRoot(
-      repositories.map((repository) => repository.rootUri),
-      documentUri.fsPath
-    );
-  } catch {
-    return undefined;
-  }
-}
-
-async function rootFor(documentUri) {
-  const gitRoot = await gitRootFor(documentUri);
-  if (gitRoot) {
-    return gitRoot;
+    return entries
+      .filter((entry) => entry.rootUri && entry.rootUri.scheme === 'file')
+      .sort((left, right) => path.basename(left.rootUri.fsPath).localeCompare(
+        path.basename(right.rootUri.fsPath),
+        undefined,
+        { sensitivity: 'base' }
+      ));
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
-  return workspaceFolder && workspaceFolder.uri;
+  dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
+    }
+    this.changeEmitter.dispose();
+  }
 }
 
 function request(url, accept = 'application/vnd.github+json', redirects = 0) {
@@ -163,9 +183,6 @@ async function checkForUpdate(context) {
 }
 
 function createRepoTerminal(rootUri) {
-  repoTerminal = undefined;
-  currentRoot = undefined;
-
   for (const terminal of [...vscode.window.terminals]) {
     terminal.dispose();
   }
@@ -180,41 +197,10 @@ function createRepoTerminal(rootUri) {
     options.shellPath = 'powershell.exe';
   }
 
-  repoTerminal = vscode.window.createTerminal(options);
-  currentRoot = normalize(rootUri.fsPath);
-  return repoTerminal;
+  return vscode.window.createTerminal(options);
 }
 
-async function syncToEditor(editor, showTerminal = true) {
-  const generation = ++syncGeneration;
-  const uri = editor && editor.document && editor.document.uri;
-
-  if (!uri || uri.scheme !== 'file') {
-    return;
-  }
-
-  const rootUri = await rootFor(uri);
-  if (!rootUri || generation !== syncGeneration) {
-    return;
-  }
-
-  const nextRoot = normalize(rootUri.fsPath);
-  const terminalIsOpen = repoTerminal && vscode.window.terminals.includes(repoTerminal);
-  const terminal = terminalIsOpen && currentRoot === nextRoot
-    ? repoTerminal
-    : createRepoTerminal(rootUri);
-
-  if (showTerminal) {
-    terminal.show(true);
-  }
-}
-
-function syncActiveEditor(showTerminal = true) {
-  void syncToEditor(vscode.window.activeTextEditor, showTerminal);
-}
-
-async function openForSourceControl(sourceControl) {
-  const rootUri = sourceControl && sourceControl.rootUri;
+async function openRepository(rootUri) {
   if (!rootUri || rootUri.scheme !== 'file') {
     await vscode.window.showErrorMessage(
       'Repo Terminal Switcher could not determine the selected repository root.'
@@ -222,45 +208,27 @@ async function openForSourceControl(sourceControl) {
     return;
   }
 
-  const generation = ++syncGeneration;
   const terminal = createRepoTerminal(rootUri);
-  if (generation === syncGeneration) {
-    terminal.show(true);
-  }
+  terminal.show(true);
 }
 
 function activate(context) {
+  const provider = new RepositoryProvider();
+
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
-      void syncToEditor(editor, true);
-    }),
-    vscode.workspace.onDidOpenTextDocument(() => {
-      setTimeout(() => syncActiveEditor(true), 0);
-    }),
-    vscode.window.onDidChangeVisibleTextEditors(() => {
-      syncActiveEditor(true);
-    }),
-    vscode.window.onDidCloseTerminal((terminal) => {
-      if (terminal === repoTerminal) {
-        repoTerminal = undefined;
-        currentRoot = undefined;
-      }
-    }),
-    vscode.commands.registerCommand('repoTerminalSwitcher.syncNow', () => {
-      return syncToEditor(vscode.window.activeTextEditor, true);
-    }),
-    vscode.commands.registerCommand('repoTerminalSwitcher.openForSourceControl', (sourceControl) => {
-      return openForSourceControl(sourceControl);
+    provider,
+    vscode.window.registerTreeDataProvider('repoTerminalSwitcher.repositories', provider),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => provider.refresh()),
+    vscode.commands.registerCommand('repoTerminalSwitcher.refresh', () => provider.refresh()),
+    vscode.commands.registerCommand('repoTerminalSwitcher.openRepository', (rootUri) => {
+      return openRepository(rootUri);
     })
   );
 
-  syncActiveEditor(false);
+  void provider.initialize();
   setTimeout(() => void checkForUpdate(context), 10000);
 }
 
-function deactivate() {
-  repoTerminal = undefined;
-  currentRoot = undefined;
-}
+function deactivate() {}
 
 module.exports = { activate, deactivate };

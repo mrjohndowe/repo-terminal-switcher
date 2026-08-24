@@ -1,8 +1,8 @@
 {
   "name": "repo-terminal-switcher",
   "displayName": "Repo Terminal Switcher",
-  "description": "Keeps one PowerShell terminal synchronized with the Git repository of the active file.",
-  "version": "1.1.6",
+  "description": "Adds a single-click Repository Terminals list to VS Code Source Control.",
+  "version": "1.1.7",
   "publisher": "mrjohndowe",
   "license": "MIT",
   "engines": {
@@ -21,34 +21,38 @@
   "homepage": "https://github.com/mrjohndowe/repo-terminal-switcher#readme",
   "packageManager": "pnpm@11.19.0",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:repoTerminalSwitcher.repositories"
   ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "repoTerminalSwitcher.syncNow",
-        "title": "Repo Terminal: Sync to Active File"
+        "command": "repoTerminalSwitcher.openRepository",
+        "title": "Open Repository Terminal"
       },
       {
-        "command": "repoTerminalSwitcher.openForSourceControl",
-        "title": "Open Repo Terminal",
-        "icon": "$(terminal-powershell)"
+        "command": "repoTerminalSwitcher.refresh",
+        "title": "Refresh Repository Terminals",
+        "icon": "$(refresh)"
       }
     ],
-    "menus": {
-      "scm/sourceControl": [
+    "views": {
+      "scm": [
         {
-          "command": "repoTerminalSwitcher.openForSourceControl",
-          "when": "scmProvider == git",
-          "group": "navigation@0"
+          "id": "repoTerminalSwitcher.repositories",
+          "name": "Repository Terminals",
+          "contextualTitle": "Repository Terminals",
+          "visibility": "visible"
         }
-      ],
-      "scm/repository": [
+      ]
+    },
+    "menus": {
+      "view/title": [
         {
-          "command": "repoTerminalSwitcher.openForSourceControl",
-          "when": "scmProvider == git",
-          "group": "1_terminal@0"
+          "command": "repoTerminalSwitcher.refresh",
+          "when": "view == repoTerminalSwitcher.repositories",
+          "group": "navigation"
         }
       ]
     },

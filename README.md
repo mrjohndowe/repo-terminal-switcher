@@ -1,14 +1,28 @@
 # Repo Terminal Switcher
 
-A minimal Windows-focused VS Code extension that keeps one integrated
-PowerShell terminal synchronized with the Git repository containing the active
-file.
+A Windows-focused VS Code extension that adds a single-click **Repository
+Terminals** list directly inside the Source Control view.
 
-When you open or click a file—including a changed file opened from Source
-Control—the extension finds the deepest Git repository containing the file,
-falls back to its workspace folder when necessary, and creates or reuses one
-integrated terminal named **Repo Terminal**. Windows paths are handled with
-PowerShell literal-path quoting.
+## Use
+
+1. Open VS Code's Source Control view.
+2. Expand **Repository Terminals**.
+3. Click a repository name.
+
+That one click closes every existing integrated terminal and creates one fresh
+PowerShell terminal named **Repo Terminal** at the selected repository root.
+The extension does not switch terminals when editor tabs or files change.
+
+The list uses repositories discovered by VS Code's built-in Git extension and
+refreshes when repositories open or close. If Git has not discovered any
+repositories yet, workspace folders are shown as a fallback.
+
+## Why this list exists
+
+VS Code does not expose an extension event for selecting a repository name in
+Microsoft's native **Repositories** list. The extension-owned **Repository
+Terminals** list provides the same single-click repository-name interaction
+with a supported API.
 
 ## Install
 
@@ -24,18 +38,6 @@ The extension checks this repository's public GitHub Releases after startup.
 When a newer semantic version is available, it downloads and installs that
 release automatically and offers to reload VS Code. Disable this with the
 `repoTerminalSwitcher.autoUpdate` setting if desired.
-
-## Use
-
-In the Source Control **Repositories** list, click the PowerShell-terminal icon
-on the repository row you want. The extension closes the existing integrated
-terminals and creates one fresh **Repo Terminal** at that repository root.
-
-VS Code does not expose an event for clicking the native repository label
-itself, so the terminal icon on that same row is the direct supported action.
-
-Opening or clicking a file still synchronizes the terminal as a fallback. You
-can also run **Repo Terminal: Sync to Active File** from the Command Palette.
 
 ## Publish an update
 
@@ -54,9 +56,3 @@ pnpm install
 pnpm run package
 
 ```
-
-## VS Code limitation
-
-VS Code does not expose a supported event for merely selecting the native Git
-repository heading in Source Control. The extension responds when that action
-opens or focuses a file, including changed files clicked in Source Control.
