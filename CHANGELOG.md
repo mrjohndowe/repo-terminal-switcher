@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.10
+
+- Remove the redundant repository-view activation event.
+- Add the required icon for the Repository Terminals view.
+
 ## 1.1.9
 
 - Add the Repo Terminal Switcher extension logo.
