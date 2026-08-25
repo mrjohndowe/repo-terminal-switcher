@@ -4,6 +4,8 @@
 
 - Add the Repo Terminal Switcher extension logo.
 - Add a Features section and walkthrough-video location to the README.
+- Restore one-click repository selection; remove the separate terminal action
+  button from built-in repository rows.
 
 ## 1.1.8
 

@@ -9,6 +9,79 @@ const TERMINAL_NAME = 'Repo Terminal';
 const RELEASE_API = 'https://api.github.com/repos/mrjohndowe/repo-terminal-switcher/releases/latest';
 const MAX_UPDATE_BYTES = 20 * 1024 * 1024;
 
+class RepositoryProvider {
+  constructor() {
+    this.gitApi = undefined;
+    this.disposables = [];
+    this.changeEmitter = new vscode.EventEmitter();
+    this.onDidChangeTreeData = this.changeEmitter.event;
+  }
+
+  async initialize() {
+    const gitExtension = vscode.extensions.getExtension('vscode.git');
+    if (!gitExtension) return;
+
+    try {
+      const exports = gitExtension.isActive
+        ? gitExtension.exports
+        : await gitExtension.activate();
+      this.gitApi = exports && typeof exports.getAPI === 'function'
+        ? exports.getAPI(1)
+        : undefined;
+
+      if (this.gitApi && typeof this.gitApi.onDidOpenRepository === 'function') {
+        this.disposables.push(this.gitApi.onDidOpenRepository(() => this.refresh()));
+      }
+      if (this.gitApi && typeof this.gitApi.onDidCloseRepository === 'function') {
+        this.disposables.push(this.gitApi.onDidCloseRepository(() => this.refresh()));
+      }
+    } catch (error) {
+      console.warn('Repo Terminal Switcher could not initialize the Git API:', error);
+    }
+
+    this.refresh();
+  }
+
+  refresh() {
+    this.changeEmitter.fire(undefined);
+  }
+
+  getTreeItem(entry) {
+    const label = path.basename(entry.rootUri.fsPath);
+    const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+    item.iconPath = new vscode.ThemeIcon('repo');
+    item.tooltip = `Open Repo Terminal at ${entry.rootUri.fsPath}`;
+    item.command = {
+      command: 'repoTerminalSwitcher.openRepository',
+      title: 'Open Repository Terminal',
+      arguments: [entry.rootUri]
+    };
+    return item;
+  }
+
+  getChildren() {
+    const repositories = this.gitApi && Array.isArray(this.gitApi.repositories)
+      ? this.gitApi.repositories
+      : [];
+    const entries = repositories.length > 0
+      ? repositories.map((repository) => ({ rootUri: repository.rootUri }))
+      : (vscode.workspace.workspaceFolders || []).map((folder) => ({ rootUri: folder.uri }));
+
+    return entries
+      .filter((entry) => entry.rootUri && entry.rootUri.scheme === 'file')
+      .sort((left, right) => path.basename(left.rootUri.fsPath).localeCompare(
+        path.basename(right.rootUri.fsPath),
+        undefined,
+        { sensitivity: 'base' }
+      ));
+  }
+
+  dispose() {
+    for (const disposable of this.disposables) disposable.dispose();
+    this.changeEmitter.dispose();
+  }
+}
+
 function request(url, accept = 'application/vnd.github+json', redirects = 0) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
@@ -123,8 +196,7 @@ function createRepoTerminal(rootUri) {
   return vscode.window.createTerminal(options);
 }
 
-async function openForSourceControl(sourceControl) {
-  const rootUri = sourceControl && sourceControl.rootUri;
+async function openRepository(rootUri) {
   if (!rootUri || rootUri.scheme !== 'file') {
     await vscode.window.showErrorMessage(
       'Repo Terminal Switcher could not determine the selected repository root.'
@@ -137,12 +209,17 @@ async function openForSourceControl(sourceControl) {
 }
 
 function activate(context) {
+  const provider = new RepositoryProvider();
+
   context.subscriptions.push(
-    vscode.commands.registerCommand('repoTerminalSwitcher.openForSourceControl', (sourceControl) => {
-      return openForSourceControl(sourceControl);
-    })
+    provider,
+    vscode.window.registerTreeDataProvider('repoTerminalSwitcher.repositories', provider),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => provider.refresh()),
+    vscode.commands.registerCommand('repoTerminalSwitcher.refresh', () => provider.refresh()),
+    vscode.commands.registerCommand('repoTerminalSwitcher.openRepository', (rootUri) => openRepository(rootUri))
   );
 
+  void provider.initialize();
   setTimeout(() => void checkForUpdate(context), 10000);
 }
 
