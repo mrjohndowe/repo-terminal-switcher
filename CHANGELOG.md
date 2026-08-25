@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.11
+
+- Replace the README's large logo image with an embedded animated walkthrough.
+- Add an instructional animation showing one-click repository terminal
+  switching.
+
 ## 1.1.10
 
 - Remove the redundant repository-view activation event.

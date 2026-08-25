@@ -1,7 +1,5 @@
 # Repo Terminal Switcher
 
-![Repo Terminal Switcher logo](media/repo-terminal-switcher-logo.png)
-
 A Windows-focused VS Code extension that adds a single-click **Repository
 Terminals** list directly inside the Source Control view.
 
@@ -15,10 +13,11 @@ Terminals** list directly inside the Source Control view.
 
 ### Video walkthrough
 
-The walkthrough video will be embedded here once its final recording is
-available. It will show opening Source Control, clicking a repository once in
-**Repository Terminals**, and seeing the terminal open at that repository's
-root.
+![Animated walkthrough: open Source Control, click a repository in Repository Terminals, and Repo Terminal opens in that repository's root.](media/repo-terminal-switcher-walkthrough.gif)
+
+The walkthrough shows opening Source Control, clicking a repository once in
+**Repository Terminals**, and seeing **Repo Terminal** open at that
+repository's root.
 
 ## Use
 
